@@ -35,11 +35,27 @@ const metadata = {
   </section>
 
   <script is:inline data-reinit>
+    function formatNumber(n) {
+      return (n || 0).toLocaleString('de-DE');
+    }
+
+    function hexToRgb(h) {
+      const v = parseInt(h.replace('#', ''), 16);
+      return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+    }
+
+    function shade(h, p) {
+      const [r, g, b] = hexToRgb(h);
+      const fmt = c => ('0' + Math.max(0, Math.min(255, c + Math.floor(2.55 * p))).toString(16)).slice(-2);
+      return '#' + fmt(r) + fmt(g) + fmt(b);
+    }
+
     async function loadBadges() {
       try {
-        const res = await fetch('/tnx-site/api/badges.json');
+        const res = await fetch('/api/badges.json');
         const badges = await res.json();
         const grid = document.getElementById('badge-grid');
+
         badges.forEach(b => {
           const el = document.createElement('div');
           el.className = 'flex flex-col items-center bg-black/40 border border-[#c6a44f]/30 p-4 rounded-2xl shadow-lg backdrop-blur-sm transition-transform hover:scale-105 hover:border-[#f7e6ac]/60';
@@ -56,8 +72,9 @@ const metadata = {
 
     async function loadUsers() {
       try {
-        const res = await fetch('/tnx-site/api/user_badges.json');
+        const res = await fetch('/api/user_badges.json');
         const users = await res.json();
+
         const search = document.getElementById('userSearch');
         const results = document.getElementById('userResults');
         const cardContainer = document.getElementById('userCardContainer');
@@ -66,40 +83,33 @@ const metadata = {
           const q = search.value.trim().toLowerCase();
           results.innerHTML = '';
           if (!q) return;
-          const filtered = users.filter(u =>
-            u.userName.toLowerCase().includes(q) || u.userLogin.toLowerCase().includes(q)
-          ).slice(0, 10);
 
-          filtered.forEach(u => {
-            const div = document.createElement('div');
-            div.className = 'cursor-pointer hover:underline hover:text-[#f7e6ac]/80';
-            div.textContent = `${u.userName}${u.userName.toLowerCase() !== u.userLogin.toLowerCase() ? ` (${u.userLogin})` : ''}`;
-            div.onclick = () => {
-              search.value = '';
-              results.innerHTML = '';
-              renderUserCard(u);
-            };
-            results.appendChild(div);
-          });
+          users
+            .filter(u =>
+              u.userName.toLowerCase().includes(q) ||
+              u.userLogin.toLowerCase().includes(q)
+            )
+            .slice(0, 10)
+            .forEach(u => {
+              const div = document.createElement('div');
+              div.className = 'cursor-pointer hover:underline hover:text-[#f7e6ac]/80';
+              div.textContent = u.userName.toLowerCase() !== u.userLogin.toLowerCase()
+                ? `${u.userName} (${u.userLogin})`
+                : u.userName;
+
+              div.onclick = () => {
+                search.value = '';
+                results.innerHTML = '';
+                renderUserCard(u);
+              };
+
+              results.appendChild(div);
+            });
         });
-
-        function formatNumber(n) {
-          return n.toLocaleString('de-DE');
-        }
-
-        function hexToRgb(h) {
-          const v = parseInt(h.replace('#', ''), 16);
-          return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-        }
-
-        function shade(h, p) {
-          const [r, g, b] = hexToRgb(h);
-          const fmt = c => ('0' + Math.max(0, Math.min(255, c + Math.floor(2.55 * p))).toString(16)).slice(-2);
-          return '#' + fmt(r) + fmt(g) + fmt(b);
-        }
 
         function renderUserCard(details) {
           cardContainer.innerHTML = '';
+
           const bc = details.backgroundColor || '#423fff';
           const dc = shade(bc, -20);
           const dn = details.userName;
@@ -107,27 +117,43 @@ const metadata = {
           const username = dn.toLowerCase() !== ul.toLowerCase() ? `${dn} (${ul})` : dn;
 
           const equippedBadges = (details.badges || []).filter(b => b.equipped).slice(0, 6);
-          const badgeHtml = equippedBadges.map(b => `<img src="${b.url}" alt="${b.name}" class="w-[70px] h-[70px] object-contain rounded-lg">`).join('');
+          const badgeHtml = equippedBadges
+            .map(b => `<img src="${b.url}" alt="${b.name}" class="w-[70px] h-[70px] object-contain rounded-lg">`)
+            .join('');
 
           const html = `
-            <div class="user-card relative w-[800px] h-[360px] rounded-[15px] overflow-hidden border-[2px] border-black shadow-[0_6px_12px_rgba(0,0,0,0.3)] font-[Poppins] opacity-0 transition-opacity duration-500"
+            <div class="relative w-[800px] h-[360px] rounded-[15px] overflow-hidden border-[2px] border-black shadow-[0_6px_12px_rgba(0,0,0,0.3)] font-[Poppins] opacity-0 transition-opacity duration-500"
                  style="background: linear-gradient(to bottom, ${bc} 70%, ${dc} 100%);">
-              <div class="banner w-full h-[180px] bg-center bg-cover"
+              <div class="w-full h-[180px] bg-center bg-cover"
                    style="background-image: url('${details.bannerImage || ''}')"></div>
-              <div class="profile-section absolute top-[100px] left-[20px] right-[20px] flex items-center z-10">
-                <div class="picture-points flex flex-col items-center">
-                  <div class="profile-picture w-[150px] h-[150px] rounded-full border-[7px]"
-                       style="border-color: ${bc}; background-color: ${bc}; background-image: url('${details.profileImageUrl || ''}'); background-size: cover; background-position: center;">
+
+              <div class="absolute top-[100px] left-[20px] right-[20px] flex items-center z-10">
+                <div class="flex flex-col items-center w-[170px]">
+                  <div class="w-[150px] h-[150px] rounded-full border-[7px]"
+                       style="border-color:${bc}; background-color:${bc}; background-image:url('${details.profileImageUrl || ''}'); background-size:cover; background-position:center;">
                   </div>
-                  <div class="points flex items-center justify-center mt-2 text-[1.3em] text-white drop-shadow-[1px_1px_1px_black]">
-                    <iconify-icon icon="mdi:star-four-points-circle" class="text-[1.1em] mr-1"></iconify-icon>
-                    ${formatNumber(details.points || 0)}
+
+                  <div class="mt-2 text-[1.3em] text-white drop-shadow-[1px_1px_1px_black] flex items-center">
+                    <iconify-icon icon="mdi:star-four-points-circle" class="mr-1"></iconify-icon>
+                    ${formatNumber(details.points)}
+                  </div>
+
+                  <div class="text-[1.1em] text-[#FFD700] drop-shadow-[1px_1px_1px_black] flex items-center">
+                    <iconify-icon icon="mdi:gold" class="mr-1"></iconify-icon>
+                    ${formatNumber(details.gold)}
                   </div>
                 </div>
-                <div class="username-container absolute top-[85px] left-[170px] text-white text-[2.4em] font-[700] drop-shadow-[1px_2px_1px_black] whitespace-nowrap">
+
+                <div class="absolute top-[85px] left-[170px] text-white text-[2.4em] font-[700] drop-shadow-[1px_2px_1px_black] whitespace-nowrap">
                   ${username}
                 </div>
-                <div class="badges-container-wrapper absolute top-[95px] right-[20px] grid grid-cols-3 grid-rows-2 gap-[10px]">
+
+                <div class="absolute top-[140px] left-[170px] text-white text-[1.2em] font-[600] drop-shadow-[1px_1px_1px_black] flex items-center">
+                  <iconify-icon icon="mdi:account-briefcase" class="mr-1"></iconify-icon>
+                  ${details.jobName || 'Citizen'}
+                </div>
+
+                <div class="absolute top-[95px] right-[20px] grid grid-cols-3 grid-rows-2 gap-[10px]">
                   ${badgeHtml}
                 </div>
               </div>
@@ -135,8 +161,8 @@ const metadata = {
           `;
 
           cardContainer.innerHTML = html;
-          const card = cardContainer.querySelector('.user-card');
-          setTimeout(() => { card.style.opacity = 1; }, 50);
+          const card = cardContainer.firstElementChild;
+          setTimeout(() => card.style.opacity = 1, 50);
         }
       } catch (e) {
         console.error('Failed to load user_badges.json', e);
