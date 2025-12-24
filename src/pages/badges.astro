@@ -38,9 +38,13 @@ const metadata = {
   </section>
 
   <script is:inline data-reinit>
-    // Router-safe global
     var API_BASE = window.API_BASE || '/tnx-site/api/';
     window.API_BASE = API_BASE;
+
+    const JOB_ICONS = {
+      tier1_Citizen: 'mdi:account',
+      tier3_Merchant: 'mdi:store',
+    };
 
     function formatNumber(n) {
       return (n || 0).toLocaleString('de-DE');
@@ -53,8 +57,7 @@ const metadata = {
 
     function shade(h, p) {
       const [r, g, b] = hexToRgb(h);
-      const fmt = c =>
-        ('0' + Math.max(0, Math.min(255, c + Math.floor(2.55 * p))).toString(16)).slice(-2);
+      const fmt = c => ('0' + Math.max(0, Math.min(255, c + Math.floor(2.55 * p))).toString(16)).slice(-2);
       return '#' + fmt(r) + fmt(g) + fmt(b);
     }
 
@@ -62,6 +65,8 @@ const metadata = {
       const res = await fetch(API_BASE + 'badges.json');
       const badges = await res.json();
       const grid = document.getElementById('badge-grid');
+
+      grid.innerHTML = ''; // IMPORTANT: prevent duplication
 
       badges.forEach(b => {
         const el = document.createElement('div');
@@ -117,9 +122,12 @@ const metadata = {
 
         const bc = details.backgroundColor || '#423fff';
         const dc = shade(bc, -20);
-        const dn = details.userName;
-        const ul = details.userLogin;
-        const username = dn.toLowerCase() !== ul.toLowerCase() ? `${dn} (${ul})` : dn;
+        const username =
+          details.userName.toLowerCase() !== details.userLogin.toLowerCase()
+            ? `${details.userName} (${details.userLogin})`
+            : details.userName;
+
+        const jobIcon = JOB_ICONS[details.jobId] || 'mdi:account';
 
         const equippedBadges = (details.badges || []).filter(b => b.equipped).slice(0, 6);
         const badgeHtml = equippedBadges
@@ -139,7 +147,7 @@ const metadata = {
 
                 <div class="mt-2 w-full flex flex-col items-start pl-[10px]">
                   <div class="flex items-center text-[1.4em] font-[700] text-white drop-shadow-[1px_1px_1px_black]">
-                    <iconify-icon icon="mdi:account-briefcase" class="mr-2 text-[1.4em]"></iconify-icon>
+                    <iconify-icon icon="${jobIcon}" class="mr-2 text-[1.4em]"></iconify-icon>
                     ${details.jobName || 'Citizen'}
                   </div>
 
