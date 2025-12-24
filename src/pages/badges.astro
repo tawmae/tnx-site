@@ -13,7 +13,10 @@ const metadata = {
       Badges
     </h1>
 
-    <div id="badge-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8 justify-items-center mb-20"></div>
+    <div
+      id="badge-grid"
+      class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8 justify-items-center mb-20"
+    ></div>
 
     <div class="py-16 px-6 bg-black/40 border border-[#c6a44f]/30 rounded-2xl shadow-[0_0_15px_rgba(198,164,79,0.25)] backdrop-blur-md">
       <h2 class="text-3xl font-extrabold text-center mb-10 bg-gradient-to-r from-[#ffda6a] to-[#c29200] bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(198,164,79,0.5)]">
@@ -35,6 +38,8 @@ const metadata = {
   </section>
 
   <script is:inline data-reinit>
+    const BASE = import.meta.env.BASE_URL;
+
     function formatNumber(n) {
       return (n || 0).toLocaleString('de-DE');
     }
@@ -46,19 +51,21 @@ const metadata = {
 
     function shade(h, p) {
       const [r, g, b] = hexToRgb(h);
-      const fmt = c => ('0' + Math.max(0, Math.min(255, c + Math.floor(2.55 * p))).toString(16)).slice(-2);
+      const fmt = c =>
+        ('0' + Math.max(0, Math.min(255, c + Math.floor(2.55 * p))).toString(16)).slice(-2);
       return '#' + fmt(r) + fmt(g) + fmt(b);
     }
 
     async function loadBadges() {
       try {
-        const res = await fetch('/api/badges.json');
+        const res = await fetch(`${BASE}api/badges.json`);
         const badges = await res.json();
         const grid = document.getElementById('badge-grid');
 
         badges.forEach(b => {
           const el = document.createElement('div');
-          el.className = 'flex flex-col items-center bg-black/40 border border-[#c6a44f]/30 p-4 rounded-2xl shadow-lg backdrop-blur-sm transition-transform hover:scale-105 hover:border-[#f7e6ac]/60';
+          el.className =
+            'flex flex-col items-center bg-black/40 border border-[#c6a44f]/30 p-4 rounded-2xl shadow-lg backdrop-blur-sm transition-transform hover:scale-105 hover:border-[#f7e6ac]/60';
           el.innerHTML = `
             <img src="${b.image}" alt="${b.name}" class="w-20 h-20 object-contain rounded-lg mb-3 border border-[#c6a44f]/20">
             <span class="text-[#f7e6ac] font-semibold text-center text-sm">${b.name}</span>
@@ -72,7 +79,7 @@ const metadata = {
 
     async function loadUsers() {
       try {
-        const res = await fetch('/api/user_badges.json');
+        const res = await fetch(`${BASE}api/user_badges.json`);
         const users = await res.json();
 
         const search = document.getElementById('userSearch');
@@ -85,17 +92,19 @@ const metadata = {
           if (!q) return;
 
           users
-            .filter(u =>
-              u.userName.toLowerCase().includes(q) ||
-              u.userLogin.toLowerCase().includes(q)
+            .filter(
+              u =>
+                u.userName.toLowerCase().includes(q) ||
+                u.userLogin.toLowerCase().includes(q)
             )
             .slice(0, 10)
             .forEach(u => {
               const div = document.createElement('div');
               div.className = 'cursor-pointer hover:underline hover:text-[#f7e6ac]/80';
-              div.textContent = u.userName.toLowerCase() !== u.userLogin.toLowerCase()
-                ? `${u.userName} (${u.userLogin})`
-                : u.userName;
+              div.textContent =
+                u.userName.toLowerCase() !== u.userLogin.toLowerCase()
+                  ? `${u.userName} (${u.userLogin})`
+                  : u.userName;
 
               div.onclick = () => {
                 search.value = '';
@@ -114,11 +123,18 @@ const metadata = {
           const dc = shade(bc, -20);
           const dn = details.userName;
           const ul = details.userLogin;
-          const username = dn.toLowerCase() !== ul.toLowerCase() ? `${dn} (${ul})` : dn;
+          const username =
+            dn.toLowerCase() !== ul.toLowerCase() ? `${dn} (${ul})` : dn;
 
-          const equippedBadges = (details.badges || []).filter(b => b.equipped).slice(0, 6);
+          const equippedBadges = (details.badges || [])
+            .filter(b => b.equipped)
+            .slice(0, 6);
+
           const badgeHtml = equippedBadges
-            .map(b => `<img src="${b.url}" alt="${b.name}" class="w-[70px] h-[70px] object-contain rounded-lg">`)
+            .map(
+              b =>
+                `<img src="${b.url}" alt="${b.name}" class="w-[70px] h-[70px] object-contain rounded-lg">`
+            )
             .join('');
 
           const html = `
@@ -130,8 +146,7 @@ const metadata = {
               <div class="absolute top-[100px] left-[20px] right-[20px] flex items-center z-10">
                 <div class="flex flex-col items-center w-[170px]">
                   <div class="w-[150px] h-[150px] rounded-full border-[7px]"
-                       style="border-color:${bc}; background-color:${bc}; background-image:url('${details.profileImageUrl || ''}'); background-size:cover; background-position:center;">
-                  </div>
+                       style="border-color:${bc}; background-color:${bc}; background-image:url('${details.profileImageUrl || ''}'); background-size:cover; background-position:center;"></div>
 
                   <div class="mt-2 text-[1.3em] text-white drop-shadow-[1px_1px_1px_black] flex items-center">
                     <iconify-icon icon="mdi:star-four-points-circle" class="mr-1"></iconify-icon>
@@ -162,7 +177,7 @@ const metadata = {
 
           cardContainer.innerHTML = html;
           const card = cardContainer.firstElementChild;
-          setTimeout(() => card.style.opacity = 1, 50);
+          setTimeout(() => (card.style.opacity = 1), 50);
         }
       } catch (e) {
         console.error('Failed to load user_badges.json', e);
